@@ -50,7 +50,6 @@ class speedy {
     }
     void draw () {
       glUseProgram (programID);
-
       float tempx=w/2;
       for(int i=4;i<=20;++i){
         tempx+=h/2;
@@ -79,19 +78,21 @@ class speedy {
           draw3DObject(rectangle);
         else
           draw3DObject(rectangle2);
-
       }
-
     }
 };
 
 class elements {
   public:
-    VAO *ground, *sky, *welcome, *banner, *piggies[19], *bluesGif[9], *play[2], *fall[8], *life[7], *statue[3];
+    VAO *ground, *sky, *welcome, *banner, *piggies[19], *bluesGif[9], *play[2], *fall[8], *life[7], *statue[3], *level;
     char buffer [33];
-    float w, h, x, y, livesX, statueY, theta;
+    float w, h, x, y, livesX;
+    float statueY1, theta1;
+    float statueY2, theta2;
+    float statueY3, theta3;
+
     int frames, idx, idx1, idx2, idx3, idx4;
-    bool hit[3], alive[3];
+    bool alive[3];
     elements() {
       for(int i = 0; i<3; i++) {
         hit[i] = false;
@@ -105,7 +106,10 @@ class elements {
       idx3 = 0;
       idx4 = 0;
       livesX = 1.5;
-      statueY = 6.5;
+      statueY1 = 3.5;
+      statueY2 = 3.5;
+      statueY3 = 3.5;
+
 
       x = 0;
       y = -12;
@@ -120,20 +124,20 @@ class elements {
         -30,-20,0 // vertex 1      
       };
       GLfloat vertex_buffer_data_welcome [] = {
-        -15,-15,0, // vertex 1
-        15,-15,0, // vertex 2
-        15, 15,0, // vertex 3      
-        15, 15,0, // vertex 3
-        -15, 15,0, // vertex 4
-        -15,-15,0 // vertex 1
+        -22,-22,0, // vertex 1
+        22,-22,0, // vertex 2
+        22, 22,0, // vertex 3      
+        22, 22,0, // vertex 3
+        -22, 22,0, // vertex 4
+        -22,-22,0 // vertex 1
       };
       GLfloat vertex_buffer_data_banner [] = {
-        -14,-7,0, // vertex 1
-        14,-7,0, // vertex 2
-        14, 7,0, // vertex 3      
-        14, 7,0, // vertex 3
-        -14, 7,0, // vertex 4
-        -14,-7,0 // vertex 1
+        -16,-9,0, // vertex 1
+        16,-9,0, // vertex 2
+        16, 9,0, // vertex 3      
+        16, 9,0, // vertex 3
+        -16, 9,0, // vertex 4
+        -16,-9,0 // vertex 1
       };
       GLfloat vertex_buffer_data_blues [] = {
         -4,-7,0, // vertex 1
@@ -144,12 +148,12 @@ class elements {
         -4,-7,0 // vertex 1
       };
         GLfloat vertex_buffer_data_statues [] = {
-        -1.5,-5,0, // vertex 1
-        1.5,-5,0, // vertex 2
-        1.5, 5,0, // vertex 3      
-        1.5, 5,0, // vertex 3
-        -1.5, 5,0, // vertex 4
-        -1.5,-5,0 // vertex 1
+        -.7,-2,0, // vertex 1
+        .7,-2,0, // vertex 2
+        .7, 2,0, // vertex 3      
+        .7, 2,0, // vertex 3
+        -.7, 2,0, // vertex 4
+        -.7,-2,0 // vertex 1
       };
 
       GLfloat vertex_buffer_data_lives [] = {
@@ -172,6 +176,8 @@ class elements {
       //sky = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[3], GL_FILL);
       welcome = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data_welcome, texture_buffer_data, textureID[8], GL_FILL);
       banner = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data_banner, texture_buffer_data, textureID[9], GL_FILL);
+      level = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data_banner, texture_buffer_data, textureID[77], GL_FILL);
+
       //piggies = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data_blues, texture_buffer_data, textureID[12], GL_FILL);
       for(int i=13; i<=21; i++) {
         bluesGif[i-13] = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data_blues, texture_buffer_data, textureID[i], GL_FILL);
@@ -267,7 +273,7 @@ class elements {
       glm::mat4 VP = Matrices.projection * Matrices.view;
       glm::mat4 MVP;  // MVP = Projection * View * Model
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(0, 0, 0));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-10, 0, 0));        // glTranslatef
       Matrices.model *= (translateRectangle);
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -285,28 +291,28 @@ class elements {
       glm::mat4 VP = Matrices.projection * Matrices.view;
       glm::mat4 MVP;  // MVP = Projection * View * Model
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(0, 7, 0));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-10, 10, 0));        // glTranslatef
       Matrices.model *= (translateRectangle);
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
       glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
       draw3DTexturedObject(banner);
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(-10, -7, 0));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-20, -7, 0));        // glTranslatef
       Matrices.model *= (translateRectangle);
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
       glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
       // draw3DTexturedObject(bluesGif[idx]);
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(6, -7, 0));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-4, -10, 0));        // glTranslatef
       Matrices.model *= (translateRectangle);
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
       glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
       draw3DTexturedObject(piggies[idx1]);
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(-5, -7, 0));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-15, -10, 0));        // glTranslatef
       Matrices.model *= (translateRectangle);
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -322,6 +328,25 @@ class elements {
         if(idx1==19) idx1 = 0;
         if(idx2==2) idx2 = 0;
       }      
+    }
+    void drawMenu2() {
+      glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glUseProgram (textureProgramID);
+      glm::vec3 eye ( 5*cos(camera_rotation_angle*M_PI/180.0f), 0, 5*sin(camera_rotation_angle*M_PI/180.0f) );
+      glm::vec3 target (0, 0, 0);
+      glm::vec3 up (0, 1, 0);
+      Matrices.view = glm::lookAt(glm::vec3(panx,0,3), glm::vec3(panx,0,0), glm::vec3(0,1,0)); // Fixed camera for 2D (ortho) in XY plane
+      glm::mat4 translateRectangle;
+      glm::mat4 VP = Matrices.projection * Matrices.view;
+      glm::mat4 MVP;  // MVP = Projection * View * Model
+      Matrices.model = glm::mat4(1.0f);
+      translateRectangle = glm::translate (glm::vec3(-10, 10, 0));        // glTranslatef
+      Matrices.model *= (translateRectangle);
+      MVP = VP * Matrices.model;
+      glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
+      glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
+      draw3DTexturedObject(level);
+      
     }
 
     void drawBackground() {
@@ -359,8 +384,8 @@ class elements {
       draw3DTexturedObject(life[idx4]);
 if(alive[0]) {
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(-15, statueY, 0));
-      glm::mat4 rotateRectangle = glm::rotate((float)(theta*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-15, statueY1, 0));
+      glm::mat4 rotateRectangle = glm::rotate((float)(theta1*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
       Matrices.model *= (translateRectangle * rotateRectangle );
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -369,8 +394,8 @@ if(alive[0]) {
     }
     if(alive[1]) {
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(-11, statueY, 0));
-      glm::mat4 rotateRectangle = glm::rotate((float)(theta*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-11, statueY2, 0));
+      glm::mat4 rotateRectangle = glm::rotate((float)(theta2*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
       Matrices.model *= (translateRectangle * rotateRectangle );
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -379,8 +404,8 @@ if(alive[0]) {
     }
     if(alive[2]) {
       Matrices.model = glm::mat4(1.0f);
-      translateRectangle = glm::translate (glm::vec3(-7, statueY, 0));
-      glm::mat4 rotateRectangle = glm::rotate((float)(theta*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
+      translateRectangle = glm::translate (glm::vec3(-7, statueY3, 0));
+      glm::mat4 rotateRectangle = glm::rotate((float)(theta3*M_PI/180.0f), glm::vec3(0,0,1));        // glTranslatef
       Matrices.model *= (translateRectangle * rotateRectangle );
       MVP = VP * Matrices.model;
       glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
@@ -388,35 +413,35 @@ if(alive[0]) {
       draw3DTexturedObject(statue[2]);
     }
       if(hit[0]) {
-          theta-=1;
-          if(theta == -100) {
+          theta1-=1;
+          if(theta1 == -100) {
             alive[0]=false;
-            statueY = 6.5;
-            theta = 0;
+            statueY1 = 6.5;
+            theta1 = 0;
             hit[0] = false;
           }  
-        statueY -= 0.09;
+        statueY1 -= 0.09;
       }
        if(hit[1]) {
-          theta-=1;
-          if(theta == -100) {
+          theta2-=1;
+          if(theta2 == -100) {
             alive[1]=false;
-            statueY = 6.5;
-            theta = 0;
+            statueY2 = 6.5;
+            theta2 = 0;
             hit[1] = false;
           }  
-        statueY -= 0.09;
+        statueY2 -= 0.09;
       }
        if(hit[2]) {
-          theta-=1;
-          if(theta == -100) {
+          theta3-=1;
+          if(theta3 == -100) {
             alive[2]=false;
-            statueY = 6.5;
-            theta = 0;
+            statueY3 = 6.5;
+            theta3 = 0;
             hit[2] = false;
 
           }  
-        statueY -= 0.09;
+        statueY3 -= 0.09;
       }
 
       
@@ -481,6 +506,28 @@ if(alive[0]) {
       glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
       glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
       snprintf(buffer, sizeof(buffer), "%d", points);
+      GL3Font.font->Render(buffer);
+
+       Matrices.model = glm::mat4(1.0f);
+      translateText = glm::translate(glm::vec3(0.5,8.5,0));
+      scaleText = glm::scale(glm::vec3(fontScaleValue,fontScaleValue,fontScaleValue));
+      Matrices.model *= (translateText * scaleText);
+      MVP = Matrices.projection * Matrices.view * Matrices.model;
+      // send font's MVP and font color to fond shaders
+      glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
+      glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
+      snprintf(buffer, sizeof(buffer), "%s", "MAGIC:");
+      GL3Font.font->Render(buffer);
+
+       Matrices.model = glm::mat4(1.0f);
+      translateText = glm::translate(glm::vec3(7.5,8.5,0));
+      scaleText = glm::scale(glm::vec3(fontScaleValue,fontScaleValue,fontScaleValue));
+      Matrices.model *= (translateText * scaleText);
+      MVP = Matrices.projection * Matrices.view * Matrices.model;
+      // send font's MVP and font color to fond shaders
+      glUniformMatrix4fv(GL3Font.fontMatrixID, 1, GL_FALSE, &MVP[0][0]);
+      glUniform3fv(GL3Font.fontColorID, 1, &fontColor[0]);
+      snprintf(buffer, sizeof(buffer), "%d", magic);
       GL3Font.font->Render(buffer);
       // Render font
       //GL3Font.font->Render(buffer);

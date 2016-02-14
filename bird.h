@@ -1,8 +1,8 @@
 
 class bird {
   public:
-    float x,y,vx,vy,boost,theta,radius, prevVx, prevVy, ix, iy;
-    float ball_rotation;
+    float x,y,vx,vy,boost,theta,radius, prevVx, prevVy;
+    float ball_rotation, coeff;
     bool shot;
     bool ball_rot_stat;
 
@@ -10,28 +10,22 @@ class bird {
     float drag, fireTime;
     VAO* triangle;
     bird(float x, float y) {
-  
-      ix = -26;
-      iy = -17;
-      this->drag=0.001;
+      this->coeff = 0.8;
+      this->x = canonX, this->y = canonY;
+      this->drag=0.1;
       ball_rotation = 0;
-      //ball_trans_stat = 0;
       ball_rot_stat = 1;
-      shot=false;
-      this->x = -26;
-      this->y = -17;
-      radius = 0.3;
+      shot = false;
+      radius = 0.5;
       boost=10.0;
-
-       static const GLfloat vertex_buffer_data [] = {
-        0, 0.3,0, // vertex 0
-        -0.3,-0.3,0, // vertex 1
-        0.3,-0.3,0, // vertex 2
+      drag = 0.1;
+      static const GLfloat vertex_buffer_data [] = {
+        0, 0.5,0, // vertex 0
+        -0.5,-0.5,0, // vertex 1
+        0.5,-0.5,0, // vertex 2
       };
-
-
       // create3DObject creates and returns a handle to a VAO that can be used later
-     triangle = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[4], GL_FILL);
+      triangle = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[4], GL_FILL);
       flag=0;
       ball_trans_stat=0;
     }
@@ -43,10 +37,8 @@ class bird {
       for(int i=0; i<=360; i++) {
         tmpx = x+radius*cos(i*M_PI/180.0);
         tmpy = y+radius*sin(i*M_PI/180.0);
-
         if(tmpx>= xx-ww/2 && tmpx<=xx+ww/2 && tmpy>= yy-hh/2 && tmpy <=yy+hh/2) {
           if(tmpx>xx-ww/2 && tmpx<xx+ww/2) vy=-coeff*vy;
-          //cout<<vx<<" "<<vy<<endl;
           if(tmpy>= yy-hh/2 && tmpy <=yy+hh/2) vx =-coeff*vx;
           return true;
         }
@@ -55,104 +47,77 @@ class bird {
     }
 
     void update() {
-      /* if(this->vx<9.8*0.01 || this->vy < 3*0.01) {
-         this->ball_trans_stat = 0;
-         }*/
       prevVx = vx;
       prevVy = vy;
-
       if(abs(vy)<0.01)vy=0;
       if(abs(vx)<0.01)vx=0;
-
       if(shot){
-        if(y <= groundLevel+1.4) {
+        if(y <= groundLevel) {
           if(vx<-0.01) drag = -5;
-          else if(vx>0.01) drag = 2;
-          else drag = 0;
+          else if(vx>0.01) drag = 5;
+          else drag = 0.01;
           vy=-vy*coeff;
         }   
         else {
-          if(vx<-0.01) drag = -0.01;
-          else if(vx>0.01) drag = 0.01;
+          if(vx<-0.01) drag = -0.1;
+          else if(vx>0.01) drag = 0.1;
           else drag = 0;
         } 
-
-
-
         if(vx||vy) {
           this->x += this->vx*0.01 - 0.5*drag*0.0001;
-
           this->y += this->vy*0.01 - 0.5*gravity*0.0001;
           this->vy -= gravity*0.01;
           this->vx -= drag*0.01;
           if(ball_rot_stat) this->ball_rotation = this->ball_rotation+1;
-          // if(vy<=0) vy = 0; 
         }
         if(vx == 0) drag = 0;
-        else if(vx==0 and vy==0)
-        {
-
-
-          /*if(flag<=5)
-            flag++,this->ball_rotation = this->ball_rotation+1;
-            else*/
-          ball_rotation=0;
-        }
-        if(prevVx==vx&&prevVy==vy || glfwGetTime()-fireTime>15 || abs(x)>24) {
+        else if(vx==0 and vy==0) ball_rotation=0;
+        if(prevVx==vx&&prevVy==vy || glfwGetTime()-fireTime>20 || abs(x)>30 || abs(y)>30 || lostLife == true) {
           ball_rot_stat = 0;
+          lostLife = false;
           flag++;
           if(flag==20) {
-            this->drag=0.01;
+            this->drag=0.1;
             ball_rot_stat = 1;
-          
-      ball_rotation = 0;
-      //ball_trans_stat = 0;
-      
-      shot=false;
-      this->x = -12;
-      this->y = groundLevel+2;
-      radius = 0.3;
-      boost=10.0;
-      flag = 0;
-      lives--;
-      if(lives == 0) {
-        points = 0;
-        lives = 3;
-      }
-      
-
-     
-    }
-
+            ball_rotation = 0;
+            shot=false;
+            this->x = canonX;
+            this->y = canonY;
+            radius = 0.5;
+            boost=10.0;
+            flag = 0;
+            shoot = 0;
+            if(lives == 0) {
+              points = 0;
+              lives = 3;
+            }    
+          }
         }
         else ball_rot_stat = 1;
       }
-
     }
 
     void fire(float boost, float theta) {
+      shoot = 2;
       this->boost = boost;
       if(boost<4)
-      boost=4;
-      else if(boost>20)
-      boost=20;
+        boost=4;
+      else if(boost>30)
+        boost=30;
       this->theta = theta;
       this->vx = boost*cos(theta*M_PI/180.0);
       this->vy = boost*sin(theta*M_PI/180.0);
       shot=true;
       flag=0;
       fireTime = glfwGetTime();
-
-
     }
 
     void draw ()
     {
-
       float increments;
       glm::mat4 translateRectangle;
 
-     
+
 
       // Compute ViewProject matrix as view/camera might not be changed for this frame (basic scenario)
       //  Don't change unless you are sure!!
@@ -174,13 +139,11 @@ class bird {
       Matrices.model *= ballTransform; 
       MVP = VP * Matrices.model; // MVP = p * V * M
       // draw3DObject draws the VAO given to it using current MVP matrix
-        glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
+      glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
 
       // Set the texture sampler to access Texture0 memory
       glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
-draw3DTexturedObject(triangle);
+      draw3DTexturedObject(triangle);
       update();
-            //camera_rotation_angle++; // Simulating camera 
-
     }
 };

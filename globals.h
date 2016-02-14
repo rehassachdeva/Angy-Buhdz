@@ -15,9 +15,13 @@
 #include <SOIL/SOIL.h>
 
 
+
 using namespace std;
 
 GLuint textureID[100];
+
+
+ 
 
 struct VAO {
   GLuint VertexArrayID;
@@ -46,7 +50,7 @@ struct FTGLFont {
   GLuint fontColorID;
 } GL3Font;
 
- static const GLfloat texture_buffer_data [] = {
+static const GLfloat texture_buffer_data [] = {
   0,1, // TexCoord 1 - bot left
   1,1, // TexCoord 2 - bot right
   1,0, // TexCoord 3 - top right
@@ -56,7 +60,7 @@ struct FTGLFont {
   0,1  // TexCoord 1 - bot left
 };
 
- static const GLfloat texture_buffer_data_triangle [] = {
+static const GLfloat texture_buffer_data_triangle [] = {
   0,1, // TexCoord 1 - bot left
   1,1, // TexCoord 2 - bot right
   1,0 // TexCoord 3 - top right
@@ -82,15 +86,13 @@ float zoom_scale = 20;
 float zoom_flag = 0;
 float panx = -10;
 float scale=1.0;
+float canonX=-26, canonY=-17;
 
 
-int points = 0, shoot = 0,power=1;
+int points = 0, shoot = 0, magic = 0;
 
-bool tar1 = true;
-bool tar2 = true;
-bool tar3 = true;
-bool tar4 = true;
-bool onMenu = true;
+bool onMenu = true, hit[3], onMenu2 = false;
+bool lostLife = false;
 double xpos, ypos, prevXpos, prevYpos;
 
 float triangle_rot_dir = 1;
@@ -254,7 +256,7 @@ struct VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloa
 /* Generate VAO, VBOs and return VAO handle - Common Color for all vertices */
 struct VAO* create3DObject (GLenum primitive_mode, int numVertices, const GLfloat* vertex_buffer_data, const GLfloat red, const GLfloat green, const GLfloat blue, GLenum fill_mode=GL_FILL)
 {
-  GLfloat* color_buffer_data = new GLfloat [3*numVertices];
+  GLfloat* color_buffer_data = new GLfloat [2*numVertices];
   for (int i=0; i<numVertices; i++) {
     color_buffer_data [3*i] = red;
     color_buffer_data [3*i + 1] = green;
@@ -390,6 +392,7 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
   if (action == GLFW_RELEASE) {
     switch (key) {
       case GLFW_KEY_A:
+
         rectangle_rot_status = false;
         ball_rot_status = false;
         break;
@@ -401,11 +404,10 @@ void keyboard (GLFWwindow* window, int key, int scancode, int action, int mods)
         triangle_rot_status = !triangle_rot_status;
         break;
       case GLFW_KEY_SPACE:
-        shoot = 1;
+        if(shoot == 0) shoot = 1;
         break;
       case GLFW_KEY_F:
         speed_inc = 0;
-
         break;
       case GLFW_KEY_S:
         speed_inc = 0;
@@ -488,15 +490,30 @@ void mouseButton (GLFWwindow* window, int button, int action, int mods)
 {
   switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
-      if (action == GLFW_RELEASE) {
-
+      if(action == GLFW_PRESS) {
         glfwGetCursorPos(window, &xpos, &ypos);
+        prevXpos = xpos;
+        prevYpos = ypos;
 
-        xpos = zoom_scale*(xpos/(715.0/2.0) - 1);
+      }
+      if (action == GLFW_RELEASE) {
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if(xpos > prevXpos) {
+          speed_inc = 1;
+
+        }
+        else if(xpos<prevXpos) {
+          speed_inc = -1;
+        }
+        else speed_inc = 0;
+        xpos = zoom_scale*(xpos/(1024.0/2.0) - 1)-10;
         ypos = -(zoom_scale*(ypos/(715.0/2.0) - 1));
-
-        rectangle_rotation = atan2(((float)ypos +7.0),((float)xpos+7.0))*180.0/M_PI;
-        //triangle_rot_dir *= -1;
+        if(xpos>=-19&&xpos<=-7&&ypos>=-17&&ypos<=-3&&onMenu) {
+          onMenu = false;
+        }
+      
+        rectangle_rotation = atan2(((float)ypos -canonY),((float)xpos-canonX))*180.0/M_PI;
+        
       }
       break;
     case GLFW_MOUSE_BUTTON_RIGHT:
@@ -596,88 +613,103 @@ GLFWwindow* initGLFW (int width, int height)
 
   return window;
 }
+
+
 void initGL (GLFWwindow* window, int width, int height)
 {
   /* Objects should be created before any other gl function and shaders */
   // Create the models
-  /*createTriangle (); // Generate the VAO, VBOs, vertices data & copy into the array buffer
-    createRectangle ();
-    createSky ();
-    createCircle (1);
-    createBall ();
-    createHorizontalWall();
-    createVerticalWall();
-    createGround();*/
-
   // Load Textures
   // Enable Texture0 as current texture memory
   glActiveTexture(GL_TEXTURE0);
   // load an image file directly as a new OpenGL texture
   // GLuint texID = SOIL_load_OGL_texture ("beach.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_TEXTURE_REPEATS); // Buggy for OpenGL3
-  textureID[0] = createTexture("canon.jpg");
-  textureID[1] = createTexture("bhakti2.png");
-  textureID[2] = createTexture("ground.jpeg");
-  textureID[3] = createTexture("sky.png");
-  textureID[4] = createTexture("bird.png");
-  textureID[5] = createTexture("block.jpeg");
-  textureID[6] = createTexture("block2.jpg");
-  textureID[7] = createTexture("piggy.jpeg");
-  textureID[8] = createTexture("welcome.jpg");
-  textureID[9] = createTexture("banner.jpg");
+  textureID[0] = createTexture("images/canon.jpg");
+  textureID[2] = createTexture("images/ground.jpeg");
+  textureID[3] = createTexture("images/sky.png");
+  textureID[4] = createTexture("images/bird.png");
+  textureID[5] = createTexture("images/block.jpeg");
+  textureID[6] = createTexture("images/block2.jpg");
+  textureID[7] = createTexture("images/piggy.jpeg");
+  textureID[8] = createTexture("images/welcome.jpg");
+  textureID[9] = createTexture("images/banner.jpg");
 
 
 
-  textureID[13] = createTexture("frame_0_delay-0.jpg");
-  textureID[14] = createTexture("frame_1_delay-0.jpg");
-  textureID[15] = createTexture("frame_2_delay-0.jpg");
-  textureID[16] = createTexture("frame_3_delay-0.jpg");
-  textureID[17] = createTexture("frame_4_delay-0.jpg");
-  textureID[18] = createTexture("frame_5_delay-0.jpg");
-  textureID[19] = createTexture("frame_6_delay-0.jpg");
-  textureID[20] = createTexture("frame_7_delay-0.jpg");
-  textureID[21] = createTexture("frame_8_delay-0.jpg");
-  textureID[22] = createTexture("o_9aee85575002f815-0.jpg");
-  textureID[23] = createTexture("o_9aee85575002f815-1.jpg");
-  textureID[24] = createTexture("o_9aee85575002f815-2.jpg");
-  textureID[25] = createTexture("o_9aee85575002f815-3.jpg");
-  textureID[26] = createTexture("o_9aee85575002f815-4.jpg");
-  textureID[27] = createTexture("o_9aee85575002f815-5.jpg");
-  textureID[28] = createTexture("o_9aee85575002f815-6.jpg");
-  textureID[29] = createTexture("o_9aee85575002f815-7.jpg");
-  textureID[30] = createTexture("o_9aee85575002f815-8.jpg");
-  textureID[31] = createTexture("o_9aee85575002f815-9.jpg");
-  textureID[32] = createTexture("o_9aee85575002f815-10.jpg");
-  textureID[33] = createTexture("o_9aee85575002f815-11.jpg");
-  textureID[34] = createTexture("o_9aee85575002f815-12.jpg");
-  textureID[35] = createTexture("o_9aee85575002f815-13.jpg");
-  textureID[36] = createTexture("o_9aee85575002f815-14.jpg");
-  textureID[37] = createTexture("o_9aee85575002f815-15.jpg");
-  textureID[38] = createTexture("o_9aee85575002f815-16.jpg");
-  textureID[39] = createTexture("o_9aee85575002f815-17.jpg");
-  textureID[40] = createTexture("o_9aee85575002f815-18.jpg");
-  textureID[41] = createTexture("o_8c353d210203cf60-0.jpg");
-  textureID[42] = createTexture("o_8c353d210203cf60-1.jpg");
+  textureID[13] = createTexture("images/frame_0_delay-0.jpg");
+  textureID[14] = createTexture("images/frame_1_delay-0.jpg");
+  textureID[15] = createTexture("images/frame_2_delay-0.jpg");
+  textureID[16] = createTexture("images/frame_3_delay-0.jpg");
+  textureID[17] = createTexture("images/frame_4_delay-0.jpg");
+  textureID[18] = createTexture("images/frame_5_delay-0.jpg");
+  textureID[19] = createTexture("images/frame_6_delay-0.jpg");
+  textureID[20] = createTexture("images/frame_7_delay-0.jpg");
+  textureID[21] = createTexture("images/frame_8_delay-0.jpg");
+  textureID[22] = createTexture("images/o_9aee85575002f815-0.jpg");
+  textureID[23] = createTexture("images/o_9aee85575002f815-1.jpg");
+  textureID[24] = createTexture("images/o_9aee85575002f815-2.jpg");
+  textureID[25] = createTexture("images/o_9aee85575002f815-3.jpg");
+  textureID[26] = createTexture("images/o_9aee85575002f815-4.jpg");
+  textureID[27] = createTexture("images/o_9aee85575002f815-5.jpg");
+  textureID[28] = createTexture("images/o_9aee85575002f815-6.jpg");
+  textureID[29] = createTexture("images/o_9aee85575002f815-7.jpg");
+  textureID[30] = createTexture("images/o_9aee85575002f815-8.jpg");
+  textureID[31] = createTexture("images/o_9aee85575002f815-9.jpg");
+  textureID[32] = createTexture("images/o_9aee85575002f815-10.jpg");
+  textureID[33] = createTexture("images/o_9aee85575002f815-11.jpg");
+  textureID[34] = createTexture("images/o_9aee85575002f815-12.jpg");
+  textureID[35] = createTexture("images/o_9aee85575002f815-13.jpg");
+  textureID[36] = createTexture("images/o_9aee85575002f815-14.jpg");
+  textureID[37] = createTexture("images/o_9aee85575002f815-15.jpg");
+  textureID[38] = createTexture("images/o_9aee85575002f815-16.jpg");
+  textureID[39] = createTexture("images/o_9aee85575002f815-17.jpg");
+  textureID[40] = createTexture("images/o_9aee85575002f815-18.jpg");
+  textureID[41] = createTexture("images/o_8c353d210203cf60-0.jpg");
+  textureID[42] = createTexture("images/o_8c353d210203cf60-1.jpg");
 
-  textureID[43] = createTexture("background/frame_0_delay-0.jpg");
-  textureID[44] = createTexture("background/frame_1_delay-0.jpg");
-  textureID[45] = createTexture("background/frame_2_delay-0.jpg");
-  textureID[46] = createTexture("background/frame_3_delay-0.jpg");
-  textureID[47] = createTexture("background/frame_4_delay-0.jpg");
-  textureID[48] = createTexture("background/frame_5_delay-0.jpg");
-  textureID[49] = createTexture("background/frame_6_delay-0.jpg");
-  textureID[50] = createTexture("background/frame_7_delay-0.jpg");
+  textureID[43] = createTexture("images/background/frame_0_delay-0.jpg");
+  textureID[44] = createTexture("images/background/frame_1_delay-0.jpg");
+  textureID[45] = createTexture("images/background/frame_2_delay-0.jpg");
+  textureID[46] = createTexture("images/background/frame_3_delay-0.jpg");
+  textureID[47] = createTexture("images/background/frame_4_delay-0.jpg");
+  textureID[48] = createTexture("images/background/frame_5_delay-0.jpg");
+  textureID[49] = createTexture("images/background/frame_6_delay-0.jpg");
+  textureID[50] = createTexture("images/background/frame_7_delay-0.jpg");
 
-  textureID[51] = createTexture("lives/frame_0_delay-0.jpg");
-  textureID[52] = createTexture("lives/frame_1_delay-0.jpg");
-  textureID[53] = createTexture("lives/frame_2_delay-0.jpg");
-  textureID[54] = createTexture("lives/frame_3_delay-0.jpg");
-  textureID[55] = createTexture("lives/frame_4_delay-0.jpg");
-  textureID[56] = createTexture("lives/frame_5_delay-0.jpg");
-  textureID[57] = createTexture("lives/frame_6_delay-0.jpg");
+  textureID[51] = createTexture("images/lives/frame_0_delay-0.jpg");
+  textureID[52] = createTexture("images/lives/frame_1_delay-0.jpg");
+  textureID[53] = createTexture("images/lives/frame_2_delay-0.jpg");
+  textureID[54] = createTexture("images/lives/frame_3_delay-0.jpg");
+  textureID[55] = createTexture("images/lives/frame_4_delay-0.jpg");
+  textureID[56] = createTexture("images/lives/frame_5_delay-0.jpg");
+  textureID[57] = createTexture("images/lives/frame_6_delay-0.jpg");
 
-  textureID[58] = createTexture("statues/statue1.png");
-  textureID[59] = createTexture("statues/statue2.png");
-  textureID[60] = createTexture("statues/statue3.png");
+  textureID[58] = createTexture("images/statues/statue1.png");
+  textureID[59] = createTexture("images/statues/statue2.png");
+  textureID[60] = createTexture("images/statues/statue3.png");
+
+  textureID[61] = createTexture("images/wheel/frame_0_delay-0.jpg");
+  textureID[62] = createTexture("images/wheel/frame_1_delay-0.jpg");
+  textureID[63] = createTexture("images/wheel/frame_2_delay-0.jpg");
+  textureID[64] = createTexture("images/wheel/frame_3_delay-0.jpg");
+  textureID[65] = createTexture("images/point.jpeg");
+
+  textureID[66] = createTexture("images/obstacles/frame_0_delay-0.jpg");
+  textureID[67] = createTexture("images/obstacles/frame_1_delay-0.jpg");
+  textureID[68] = createTexture("images/obstacles/frame_2_delay-0.jpg");
+
+  textureID[69] = createTexture("images/images/ball/frame_0_delay-0.jpg");
+  textureID[70] = createTexture("images/images/ball/frame_1_delay-0.jpg");
+  textureID[71] = createTexture("images/images/ball/frame_2_delay-0.jpg");
+  textureID[72] = createTexture("images/images/ball/frame_3_delay-0.jpg");
+  textureID[73] = createTexture("images/images/ball/frame_4_delay-0.jpg");
+  textureID[74] = createTexture("images/images/ball/frame_5_delay-0.jpg");
+  textureID[75] = createTexture("images/images/ball/frame_6_delay-0.jpg");
+
+  textureID[76] = createTexture("images/images/star.png");
+  textureID[77] = createTexture("images/images/level.jpg");
+  textureID[78] = createTexture("images/images/obstacles/frame_3_delay-0.jpg");
+
 
 
   // check for an error during the load process

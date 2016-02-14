@@ -1,37 +1,39 @@
-
-
 class block {
   public:
-    VAO *rectangle;
-    float x,y,h,w, vx,vy, boost, theta,drag;
-    int update_theta, fall, type;
-    int score, lives;    
+    VAO *rectangle, *fish[4],  *ball[7];
+    float x,y,h,w, vx,vy, boost, theta, drag, gravity;
+    int update_theta, fall, type, frames;
+    int score, lives, idx, idx2;    
     bool alive;
 
     block(float x, float y, float h, float w, float col, int type) {
+
       this->x=x;
+      this->idx = 0;
       this->y=y;
       this->h=h;
       this->w=w;
       this->type = type;
-      this->drag = 5;
+      this->frames = 0;
+      this->drag = 20;
       this->update_theta = 0;
-      //if(y-h/2<=groundLevel)
+      this->gravity = 10;
       this->fall = 0;
       this->theta = 0;
-      alive = true;
+      this->alive = true;
       this->vx = 0;
       this->vy = 0;
+      idx2=0;
+      if(type==2) this->score = 100;
 
       GLfloat vertex_buffer_data [] = {
         -w/2,-h/2,0, // vertex 1
         w/2,-h/2,0, // vertex 2
         w/2, h/2,0, // vertex 3
-w/2, h/2,0, // vertex 3
- -w/2, h/2,0, // vertex 4
+        w/2, h/2,0, // vertex 3
+        -w/2, h/2,0, // vertex 4
         -w/2,-h/2,0 // vertex 1
-        
-       
+
       };
       GLfloat color_buffer_data [] = {
         0,col,1, // color 1
@@ -43,24 +45,31 @@ w/2, h/2,0, // vertex 3
         0,col,1, // color 3
         0,col,1, // color 4
       };
-
-     
       if(type==3) 
         rectangle = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[5], GL_FILL);
       else if(type == 1)
         rectangle = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[6], GL_FILL);
       else if(type == 2)
         rectangle = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[7], GL_FILL);
+      else if(type == 4) {
+        for(int i =0; i<3; i++) 
+         fish[i] = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[66+i], GL_FILL);
+         fish[3] = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[78], GL_FILL);
+       
+      }
+
+      else if(type == 5) {
+        for(int i=0; i<7; i++)
+        ball[i] = create3DTexturedObject(GL_TRIANGLES, 6, vertex_buffer_data, texture_buffer_data, textureID[69+i], GL_FILL);
 
 
-
-
-      //rectangle 
+      }
     }
     void fire(float boost) {
       vx = boost*10;
     }
     bool checkBelow(block t2){
+      if(type==4 || type==5) return true;
 
       float l1x=x-w/2,l1y=y+h/2,r1x=x+w/2,r1y=y-h/2;
       float l2x=t2.x-t2.w/2,l2y=t2.y+t2.h/2,r2x=t2.x+t2.w/2,r2y=t2.y-t2.h/2;
@@ -80,7 +89,7 @@ w/2, h/2,0, // vertex 3
 
 
       //if(t2.y+t2.h/2>=y-h/2 && (t2.x+t2.w/2>=x-w/2 || t2.x-t2.w/2<=x+w/2)) return true;
-        //        else return false;
+      //        else return false;
       //if((t2.x+t2.w/2<x-w/2 or t2.x-t2.w/2>x+w/2)) return false;
       //else if()  or (t2.y-t2.h/2>y+h/2 or t2.x-t2.w/2>x+w/2 or t2.y+t2.h/2<y-h/2 ) return false;
       //return true;
@@ -97,7 +106,7 @@ w/2, h/2,0, // vertex 3
       float l2x=t3.x-t3.w/2,l2y=t3.y+t3.h/2,r2x=t3.x+t3.w/2,r2y=t3.y-t3.h/2;
 
       if(t3.type == 3 && l1y >= l2y) return false;
-     
+
       if (l1x > r2x || l2x > r1x)
         return false;
       if (l1y < r2y || l2y < r1y)
@@ -107,9 +116,9 @@ w/2, h/2,0, // vertex 3
     }
 
     void update() {
-      if(type==3) return;
+      if(type==3 || type==4) return;
       //cout<<vx<<vy<<fall<<endl;
-      
+
 
       if(vx>0) {
         this->x += this->vx*0.01 - 0.5*drag*0.0001;
@@ -136,8 +145,9 @@ w/2, h/2,0, // vertex 3
     }
 
     void draw () {
+
       if(alive) {
-         glUseProgram (textureProgramID);
+        glUseProgram (textureProgramID);
         glm::mat4 translateRectangle;
 
 
@@ -157,14 +167,31 @@ w/2, h/2,0, // vertex 3
         //Matrices.model *= (translateRectangle );
 
         MVP = VP * Matrices.model;
-            glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
-            glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
-            draw3DTexturedObject(rectangle);
-       
-        // draw3DObject draws the VAO given to it using current MVP matrix
+        glUniformMatrix4fv(Matrices.TexMatrixID, 1, GL_FALSE, &MVP[0][0]);
+        glUniform1i(glGetUniformLocation(textureProgramID, "texSampler"), 0);
+        if(type != 4 && type!=5) draw3DTexturedObject(rectangle);
+        else {
+            frames++;
+          if(frames==20) {
+            frames = 0;
+            idx++;
+            idx2++;
+          if(idx==4) idx = 0;
+          if(idx2==7) idx2 = 0;
+
+        }
+          if(type==4) draw3DTexturedObject(fish[idx]);
+          if(type==5) draw3DTexturedObject(ball[idx2]);
+
+
+        }
       
-     //   theta -= boost*update_theta;
-     //   if(theta <= -90) update_theta = 0;
+
+
+        // draw3DObject draws the VAO given to it using current MVP matrix
+
+        //   theta -= boost*update_theta;
+        //   if(theta <= -90) update_theta = 0;
 
         update();
       }
